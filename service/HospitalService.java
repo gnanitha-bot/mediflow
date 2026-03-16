@@ -1,101 +1,104 @@
 package service;
 
-import java.util.Stack;
-
 import model.Patient;
-import storage.PatientStore;
 import queue.PatientQueue;
 import queue.EmergencyQueue;
 import queue.DoctorRotation;
+import storage.PatientStore;
+import icu.ICUBedManager;
+
+import java.util.Stack;
 
 public class HospitalService {
 
-    private PatientStore store = new PatientStore();
-    private PatientQueue normalQueue = new PatientQueue();
+    private PatientStore patientStore = new PatientStore();
+    private PatientQueue patientQueue = new PatientQueue();
     private EmergencyQueue emergencyQueue = new EmergencyQueue();
     private DoctorRotation doctorRotation = new DoctorRotation();
+    private ICUBedManager icuManager = new ICUBedManager();
 
-    private Stack<String> actions = new Stack<>();
+    private Stack<String> undoStack = new Stack<>();
 
-    // Register patient
-    public void registerPatient(Patient patient) {
 
-        store.addPatient(patient);
-        actions.push("Registered patient ID: " + patient.getPatientId());
+    public void registerPatient(Patient p) {
 
+        patientStore.addPatient(p);
+
+        undoStack.push("Registered patient ID: " + p.getId());
     }
 
-    // Book normal appointment
-    public void bookAppointment(Patient patient) {
 
-        normalQueue.addPatient(patient);
-        actions.push("Appointment booked for patient ID: " + patient.getPatientId());
+    public void bookAppointment(Patient p) {
 
+        patientQueue.addPatient(p);
+
+        undoStack.push("Appointment booked for patient ID: " + p.getId());
     }
 
-    // Emergency admission
-    public void emergencyAdmission(Patient patient) {
 
-        emergencyQueue.addEmergencyPatient(patient);
-        actions.push("Emergency admission for patient ID: " + patient.getPatientId());
+    public void emergencyAdmission(Patient p) {
 
+        emergencyQueue.addPatient(p);
+
+        undoStack.push("Emergency admission for patient ID: " + p.getId());
     }
 
-    // Treat normal patient
+
     public void treatNormalPatient() {
 
-        Patient p = normalQueue.servePatient();
+        Patient p = patientQueue.treatPatient();
 
         if (p != null) {
 
-            System.out.println("Doctor " + doctorRotation.getCurrentDoctor() + " treating: " + p);
+            System.out.println("Doctor " + doctorRotation.getCurrentDoctor()
+                    + " treating normal patient: " + p);
 
             doctorRotation.nextDoctor();
-
-            actions.push("Normal patient treated ID: " + p.getPatientId());
-
         }
-
     }
 
-    // Treat emergency patient
+
     public void treatEmergencyPatient() {
 
-        Patient p = emergencyQueue.treatEmergencyPatient();
+        // CHANGE HERE
+        Patient p = emergencyQueue.treatPatient();
 
         if (p != null) {
 
-            System.out.println("Doctor " + doctorRotation.getCurrentDoctor() + " treating emergency: " + p);
+            System.out.println("Doctor " + doctorRotation.getCurrentDoctor()
+                    + " treating emergency patient: " + p);
+
+            if (p.getSeverity() >= 4) {
+
+                icuManager.allocateBed(p);
+            }
 
             doctorRotation.nextDoctor();
-
-            actions.push("Emergency patient treated ID: " + p.getPatientId());
-
         }
-
     }
 
-    // Show patients
+
     public void showPatients() {
 
-        store.displayAllPatients();
-
+        patientStore.showPatients();
     }
 
-    // Undo last action
+
     public void undoLastAction() {
 
-        if (actions.isEmpty()) {
+        if (!undoStack.isEmpty()) {
 
-            System.out.println("No actions to undo");
+            System.out.println("Undo operation: " + undoStack.pop());
 
-        } 
-        else {
+        } else {
 
-            String lastAction = actions.pop();
-            System.out.println("Undo operation: " + lastAction);
-
+            System.out.println("Nothing to undo.");
         }
+    }
 
+
+    public void showICUBeds() {
+
+        icuManager.showBeds();
     }
 }
