@@ -1,0 +1,47 @@
+package icu;
+
+import java.util.PriorityQueue;
+import model.Patient;
+
+public class ICUBedManager {
+
+    private int totalBeds = 3;
+
+    private PriorityQueue<Patient> waitingList =
+            new PriorityQueue<>((a, b) -> b.getSeverity() - a.getSeverity());
+
+    public void allocateBed(Patient patient) {
+
+        if (totalBeds > 0) {
+
+            totalBeds--;
+
+            System.out.println("ICU Bed allocated to: " + patient.getName());
+
+        } else {
+
+            waitingList.add(patient);
+
+            System.out.println("No ICU beds available. Patient added to waiting list.");
+        }
+    }
+
+    public void releaseBed() {
+
+        totalBeds++;
+
+        if (!waitingList.isEmpty()) {
+
+            Patient next = waitingList.poll();
+
+            totalBeds--;
+
+            System.out.println("ICU Bed allocated to waiting patient: " + next.getName());
+        }
+    }
+
+    public void showBeds() {
+
+        System.out.println("Available ICU Beds: " + totalBeds);
+    }
+}
